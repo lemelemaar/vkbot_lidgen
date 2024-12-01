@@ -49,15 +49,50 @@ async def main_menu_handler(message: Message):
 @bot.on.raw_event(
     GroupEventType.MESSAGE_EVENT,
     MessageEvent,
+    rules.PayloadRule({"vet": "mm"})
+)
+async def main_menu_handler(message: Message):
+    await message.answer(
+        message='Вас приветствует "Министрерство добрых дел"!\nМы помогаем бездомным животным найти семью :)\n\n'
+                'Что вас интересует?',
+        keyboard=(
+            Keyboard(inline=True)
+            .add(Callback(label="Консультация ветеринара", payload={"mm": "vet"}),
+                 color=KeyboardButtonColor.PRIMARY)
+            .row()
+            .add(Callback(label="Подобрать питомца", payload={"mm": "pet"}),
+                 color=KeyboardButtonColor.POSITIVE)
+            .row()
+            .add(Callback(label="Помочь животным", payload={"mm": "help_pet"}),
+                 color=KeyboardButtonColor.PRIMARY)
+            .row()
+            .add(Callback(label="Помочь людям", payload={"mm": "help_ppl"}),
+                 color=KeyboardButtonColor.POSITIVE)
+            .row()
+            .add(Callback(label="Льготная стерилизация животных", payload={"mm": "st"}),
+                 color=KeyboardButtonColor.PRIMARY)
+            .get_json()
+        ),
+    )
+    await bot.state_dispenser.set(message.peer_id, MainStates.MAIN_MENU)
+
+
+@bot.on.raw_event(
+    GroupEventType.MESSAGE_EVENT,
+    MessageEvent,
     rules.PayloadRule({"mm": "vet"}),
 )
 async def vet(event: MessageEvent):
     await bot.state_dispenser.set(event.peer_id, MainStates.VET)
     await event.edit_message(
-        message="что-то",
+        message="Запишитеь на консультацию ветеринара.",
         keyboard=(
             Keyboard(inline=True)
-            .add(Callback(label="Callback-кнопка", payload={"cmd": "callback"}))
+            .add(Callback(label="Записаться", payload={"vet": "lid"}),
+                 color=KeyboardButtonColor.PRIMARY)
+            .row()
+            .add(Callback(label="Назад", payload={"vet": "mm"}),
+                 color=KeyboardButtonColor.POSITIVE)
             .get_json()
         ),
     )
