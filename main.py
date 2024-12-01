@@ -110,13 +110,26 @@ async def lid(event: MessageEvent):
         message="Оставьте свой номер телефона. Мы свяжемся с вами при первой появившейся возможности.",
         keyboard=(
             Keyboard(inline=True)
-            .add(Callback(label="Подтвердить", payload={"vet": "tel"}),
-                 color=KeyboardButtonColor.PRIMARY)
-            .row()
             .add(Callback(label="Назад", payload={"mm": "vet"}),
                  color=KeyboardButtonColor.POSITIVE)
             .get_json()
         ),
     )
+
+
+@bot.on.message(state=MainStates.LID_VET, length=10)
+async def tel(message: Message):
+    await message.edit_message(
+        message=f"{message.text} - это ваш номер телефона?",
+        keyboard=(
+            Keyboard(inline=True)
+            .add(Callback(label="Подтвердить", payload={"vet": "tel"}),
+                 color=KeyboardButtonColor.PRIMARY)
+            .add(Callback(label="Назад", payload={"mm": "vet"}),
+                 color=KeyboardButtonColor.POSITIVE)
+            .get_json()
+        ),
+    )
+
 
 bot.run_forever()
