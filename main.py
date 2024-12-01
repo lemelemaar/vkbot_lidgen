@@ -17,6 +17,7 @@ class MainStates(BaseStateGroup):
     HELP_PET = "help_pet"
     HELP_PPL = "help_ppl"
     STERILIZATION = "sterilization"
+    LID_VET = "lid_vet"
 
 
 @bot.on.message(text="Начать")
@@ -49,10 +50,10 @@ async def main_menu_handler(message: Message):
 @bot.on.raw_event(
     GroupEventType.MESSAGE_EVENT,
     MessageEvent,
-    rules.PayloadRule({"vet": "mm"})
+    rules.PayloadRule({"mm": "mm"})
 )
-async def main_menu_handler(message: Message):
-    await message.answer(
+async def main_menu_handler(event: MessageEvent):
+    await event.edit_message(
         message='Вас приветствует "Министрерство добрых дел"!\nМы помогаем бездомным животным найти семью :)\n\n'
                 'Что вас интересует?',
         keyboard=(
@@ -74,7 +75,7 @@ async def main_menu_handler(message: Message):
             .get_json()
         ),
     )
-    await bot.state_dispenser.set(message.peer_id, MainStates.MAIN_MENU)
+    await bot.state_dispenser.set(event.peer_id, MainStates.MAIN_MENU)
 
 
 @bot.on.raw_event(
@@ -91,11 +92,31 @@ async def vet(event: MessageEvent):
             .add(Callback(label="Записаться", payload={"vet": "lid"}),
                  color=KeyboardButtonColor.PRIMARY)
             .row()
-            .add(Callback(label="Назад", payload={"vet": "mm"}),
+            .add(Callback(label="Назад", payload={"mm": "mm"}),
                  color=KeyboardButtonColor.POSITIVE)
             .get_json()
         ),
     )
 
+
+@bot.on.raw_event(
+    GroupEventType.MESSAGE_EVENT,
+    MessageEvent,
+    rules.PayloadRule({"vet": "lid"}),
+)
+async def lid(event: MessageEvent):
+    await bot.state_dispenser.set(event.peer_id, MainStates.LID_VET)
+    await event.edit_message(
+        message="Оставьте свой номер телефона. Мы свяжемся с вами при первой появившейся возможности.",
+        keyboard=(
+            Keyboard(inline=True)
+            .add(Callback(label="Подтвердить", payload={"vet": "tel"}),
+                 color=KeyboardButtonColor.PRIMARY)
+            .row()
+            .add(Callback(label="Назад", payload={"mm": "vet"}),
+                 color=KeyboardButtonColor.POSITIVE)
+            .get_json()
+        ),
+    )
 
 bot.run_forever()
