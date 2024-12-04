@@ -1,5 +1,5 @@
-from vkbottle.bot import Bot, Message, MessageEvent, rules
-from vkbottle import Callback, GroupEventType, Keyboard, BaseStateGroup, KeyboardButtonColor, Text
+from vkbottle.bot import Bot, Message
+from vkbottle import Keyboard, BaseStateGroup, KeyboardButtonColor, Text
 from dotenv import load_dotenv
 import logging
 import os
@@ -23,11 +23,11 @@ class MainStates(BaseStateGroup):
 
 @bot.on.private_message(state=None)
 @bot.on.private_message(
-    text=["Назад", "Назад".upper(), "Назад".lower()],
+    text=["Назад", "Назад".upper(), "Назад".lower(), "Главное меню", "Главное меню".upper(), "Главное меню".lower()],
     state=[
         MainStates.VET, MainStates.PET,
         MainStates.HELP_PET, MainStates.HELP_PPL,
-        MainStates.STERILIZATION
+        MainStates.STERILIZATION, MainStates.LID_VET_OK
     ]
 )
 async def main_menu_handler(message: Message):
@@ -73,7 +73,7 @@ async def vet(message: Message):
 
 
 @bot.on.private_message(text=["Записаться", "Записаться".upper(), "Записаться".lower()], state=MainStates.VET)
-async def lid(message: Message):
+async def lid_vet(message: Message):
     await bot.state_dispenser.set(message.peer_id, MainStates.LID_VET)
     await message.answer(
         message="Введите свой номер телефона. Мы свяжемся с вами при первой появившейся возможности.",
@@ -86,7 +86,7 @@ async def lid(message: Message):
 
 
 @bot.on.private_message(state=MainStates.LID_VET, length=10)
-async def tel(message: Message):
+async def tel_vet(message: Message):
     await message.reply(
         message="Это ваш номер телефона? Подтвердите.",
         keyboard=(
@@ -99,15 +99,26 @@ async def tel(message: Message):
 
 
 @bot.on.private_message(state=MainStates.LID_VET, text=["Да", "Да".upper(), "Да".lower()])
-async def tel_ok(message: Message):
+async def tel_vet_ok(message: Message):
     await bot.state_dispenser.set(message.peer_id, MainStates.LID_VET_OK)
-    m = await bot.api.messages.get_by_id(message_ids=message.id-2)
+    phone = await bot.api.messages.get_by_id(message_ids=message.id-2)
+    user_info = await bot.api.users.get(user_ids=message.from_id)
     await bot.api.messages.send(
-        peer_id=2000000001,
-        message=f"{m.items[0].text}",
+        peer_id=os.getenv("ADMIN_CHAT_ID"),
+        message=f"Услуга: запись на консультацию ветеринара\n"
+                f"Пользователь: {user_info[0].first_name} {user_info[0].last_name}\n"
+                f"Телефон: {phone.items[0].text}\n"
+                f"Ссылка: https://vk.com/id{user_info[0].id}\n",
         random_id=0
     )
-    await message.answer("Спасибо! Мы позвоним вам при первой возможности :)")
+    await message.answer(
+        message="Спасибо! Мы позвоним вам при первой возможности :)",
+        keyboard=(
+            Keyboard(inline=False)
+            .add(Text(label="Главное меню"), color=KeyboardButtonColor.PRIMARY)
+            .get_json()
+        )
+    )
 
 
 bot.run_forever()
