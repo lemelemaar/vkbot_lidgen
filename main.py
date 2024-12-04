@@ -51,8 +51,13 @@ async def main_menu_handler(message: Message):
     )
 
 
-@bot.on.message(text=["Консультация ветеринара", "Консультация ветеринара".upper(), "Консультация ветеринара".lower()],
-                state=MainStates.MAIN_MENU)
+@bot.on.private_message(
+    text=[
+        "Консультация ветеринара", "Консультация ветеринара".upper(),
+        "Консультация ветеринара".lower()
+    ],
+    state=MainStates.MAIN_MENU
+)
 async def vet(message: Message):
     await bot.state_dispenser.set(message.peer_id, MainStates.VET)
     await message.answer(
@@ -67,7 +72,7 @@ async def vet(message: Message):
     )
 
 
-@bot.on.message(text=["Записаться", "Записаться".upper(), "Записаться".lower()], state=MainStates.VET)
+@bot.on.private_message(text=["Записаться", "Записаться".upper(), "Записаться".lower()], state=MainStates.VET)
 async def lid(message: Message):
     await bot.state_dispenser.set(message.peer_id, MainStates.LID_VET)
     await message.answer(
@@ -80,9 +85,8 @@ async def lid(message: Message):
     )
 
 
-@bot.on.message(state=MainStates.LID_VET, length=10)
+@bot.on.private_message(state=MainStates.LID_VET, length=10)
 async def tel(message: Message):
-
     await message.reply(
         message="Это ваш номер телефона? Подтвердите.",
         keyboard=(
@@ -94,7 +98,7 @@ async def tel(message: Message):
     )
 
 
-@bot.on.message(state=MainStates.LID_VET, text=["Да", "Да".upper(), "Да".lower()])
+@bot.on.private_message(state=MainStates.LID_VET, text=["Да", "Да".upper(), "Да".lower()])
 async def tel_ok(message: Message):
     await bot.state_dispenser.set(message.peer_id, MainStates.LID_VET_OK)
     m = await bot.api.messages.get_by_id(message_ids=message.id-2)
