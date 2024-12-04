@@ -1,5 +1,5 @@
 from vkbottle.bot import Bot, Message, MessageEvent, rules
-from vkbottle import Callback, GroupEventType, Keyboard, BaseStateGroup, KeyboardButtonColor
+from vkbottle import Callback, GroupEventType, Keyboard, BaseStateGroup, KeyboardButtonColor, Text
 from dotenv import load_dotenv
 import logging
 import os
@@ -18,100 +18,63 @@ class MainStates(BaseStateGroup):
     HELP_PPL = "help_ppl"
     STERILIZATION = "sterilization"
     LID_VET = "lid_vet"
+    LID_VET_OK = "lid_vet_ok"
 
 
-@bot.on.message(text="Начать")
+@bot.on.private_message(state=None)
+@bot.on.private_message(
+    text=["Назад", "Назад".upper(), "Назад".lower()],
+    state=[
+        MainStates.VET, MainStates.PET,
+        MainStates.HELP_PET, MainStates.HELP_PPL,
+        MainStates.STERILIZATION
+    ]
+)
 async def main_menu_handler(message: Message):
-    await message.answer(
-        message='Вас приветствует "Министрерство добрых дел"!\nМы помогаем бездомным животным найти семью :)\n\n'
-                'Что вас интересует?',
-        keyboard=(
-            Keyboard(inline=True)
-            .add(Callback(label="Консультация ветеринара", payload={"mm": "vet"}),
-                 color=KeyboardButtonColor.PRIMARY)
-            .row()
-            .add(Callback(label="Подобрать питомца", payload={"mm": "pet"}),
-                 color=KeyboardButtonColor.POSITIVE)
-            .row()
-            .add(Callback(label="Помочь животным", payload={"mm": "help_pet"}),
-                 color=KeyboardButtonColor.PRIMARY)
-            .row()
-            .add(Callback(label="Помочь людям", payload={"mm": "help_ppl"}),
-                 color=KeyboardButtonColor.POSITIVE)
-            .row()
-            .add(Callback(label="Льготная стерилизация животных", payload={"mm": "st"}),
-                 color=KeyboardButtonColor.PRIMARY)
-            .get_json()
-        ),
-    )
     await bot.state_dispenser.set(message.peer_id, MainStates.MAIN_MENU)
-
-
-@bot.on.raw_event(
-    GroupEventType.MESSAGE_EVENT,
-    MessageEvent,
-    rules.PayloadRule({"mm": "mm"})
-)
-async def main_menu_handler(event: MessageEvent):
-    await event.edit_message(
-        message='Вас приветствует "Министрерство добрых дел"!\nМы помогаем бездомным животным найти семью :)\n\n'
-                'Что вас интересует?',
+    await message.answer(
+        message='Вас приветствует организация "Министрерство добрых дел"!\n'
+                'Мы помогаем бездомным животным найти семью :)\n\nЧто вас интересует?',
         keyboard=(
-            Keyboard(inline=True)
-            .add(Callback(label="Консультация ветеринара", payload={"mm": "vet"}),
-                 color=KeyboardButtonColor.PRIMARY)
+            Keyboard(inline=False)
+            .add(Text(label="Консультация ветеринара"), color=KeyboardButtonColor.PRIMARY)
             .row()
-            .add(Callback(label="Подобрать питомца", payload={"mm": "pet"}),
-                 color=KeyboardButtonColor.POSITIVE)
+            .add(Text(label="Подобрать питомца"), color=KeyboardButtonColor.POSITIVE)
             .row()
-            .add(Callback(label="Помочь животным", payload={"mm": "help_pet"}),
-                 color=KeyboardButtonColor.PRIMARY)
+            .add(Text(label="Помочь животным"), color=KeyboardButtonColor.PRIMARY)
             .row()
-            .add(Callback(label="Помочь людям", payload={"mm": "help_ppl"}),
-                 color=KeyboardButtonColor.POSITIVE)
+            .add(Text(label="Помочь людям"), color=KeyboardButtonColor.POSITIVE)
             .row()
-            .add(Callback(label="Льготная стерилизация животных", payload={"mm": "st"}),
-                 color=KeyboardButtonColor.PRIMARY)
-            .get_json()
-        ),
-    )
-    await bot.state_dispenser.set(event.peer_id, MainStates.MAIN_MENU)
-
-
-@bot.on.raw_event(
-    GroupEventType.MESSAGE_EVENT,
-    MessageEvent,
-    rules.PayloadRule({"mm": "vet"}),
-)
-async def vet(event: MessageEvent):
-    await bot.state_dispenser.set(event.peer_id, MainStates.VET)
-    await event.edit_message(
-        message="Запишитеь на консультацию ветеринара.",
-        keyboard=(
-            Keyboard(inline=True)
-            .add(Callback(label="Записаться", payload={"vet": "lid"}),
-                 color=KeyboardButtonColor.PRIMARY)
-            .row()
-            .add(Callback(label="Назад", payload={"mm": "mm"}),
-                 color=KeyboardButtonColor.POSITIVE)
+            .add(Text(label="Льготная стерилизация животных"), color=KeyboardButtonColor.PRIMARY)
             .get_json()
         ),
     )
 
 
-@bot.on.raw_event(
-    GroupEventType.MESSAGE_EVENT,
-    MessageEvent,
-    rules.PayloadRule({"vet": "lid"}),
-)
-async def lid(event: MessageEvent):
-    await bot.state_dispenser.set(event.peer_id, MainStates.LID_VET)
-    await event.edit_message(
-        message="Оставьте свой номер телефона. Мы свяжемся с вами при первой появившейся возможности.",
+@bot.on.message(text=["Консультация ветеринара", "Консультация ветеринара".upper(), "Консультация ветеринара".lower()],
+                state=MainStates.MAIN_MENU)
+async def vet(message: Message):
+    await bot.state_dispenser.set(message.peer_id, MainStates.VET)
+    await message.answer(
+        message="Хотите записаться на консультацию ветеринара?",
         keyboard=(
-            Keyboard(inline=True)
-            .add(Callback(label="Назад", payload={"mm": "vet"}),
-                 color=KeyboardButtonColor.POSITIVE)
+            Keyboard(inline=False)
+            .add(Text(label="Записаться"), color=KeyboardButtonColor.PRIMARY)
+            .row()
+            .add(Text(label="Назад"), color=KeyboardButtonColor.POSITIVE)
+            .get_json()
+        ),
+    )
+
+
+@bot.on.message(text=["Записаться", "Записаться".upper(), "Записаться".lower()], state=MainStates.VET)
+async def lid(message: Message):
+    await bot.state_dispenser.set(message.peer_id, MainStates.LID_VET)
+    await message.answer(
+        message="Введите свой номер телефона. Мы свяжемся с вами при первой появившейся возможности.",
+        keyboard=(
+            Keyboard(inline=False)
+            .add(Text(label="Назад"), color=KeyboardButtonColor.POSITIVE)
             .get_json()
         ),
     )
@@ -119,17 +82,28 @@ async def lid(event: MessageEvent):
 
 @bot.on.message(state=MainStates.LID_VET, length=10)
 async def tel(message: Message):
-    await message.edit_message(
-        message=f"{message.text} - это ваш номер телефона?",
+
+    await message.reply(
+        message="Это ваш номер телефона? Подтвердите.",
         keyboard=(
-            Keyboard(inline=True)
-            .add(Callback(label="Подтвердить", payload={"vet": "tel"}),
-                 color=KeyboardButtonColor.PRIMARY)
-            .add(Callback(label="Назад", payload={"mm": "vet"}),
-                 color=KeyboardButtonColor.POSITIVE)
+            Keyboard(inline=False)
+            .add(Text(label="Да"), color=KeyboardButtonColor.PRIMARY)
+            .add(Text(label="Назад"), color=KeyboardButtonColor.POSITIVE)
             .get_json()
         ),
     )
+
+
+@bot.on.message(state=MainStates.LID_VET, text=["Да", "Да".upper(), "Да".lower()])
+async def tel_ok(message: Message):
+    await bot.state_dispenser.set(message.peer_id, MainStates.LID_VET_OK)
+    m = await bot.api.messages.get_by_id(message_ids=message.id-2)
+    await bot.api.messages.send(
+        peer_id=2000000001,
+        message=f"{m.items[0].text}",
+        random_id=0
+    )
+    await message.answer("Спасибо! Мы позвоним вам при первой возможности :)")
 
 
 bot.run_forever()
